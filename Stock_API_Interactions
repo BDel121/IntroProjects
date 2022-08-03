@@ -1,0 +1,75 @@
+import pandas as pd
+import requests
+import plotly.graph_objects as go
+
+# api_key 'DEMO'
+api_key = 'DEMO'
+def income_statement(stock):
+    number_qts = input('How many qts? '). strip()
+    IS = requests.get(f'https://financialmodelingprep.com/api/v3/income-statement/{stock}?limit={number_qts}&apikey={api_key}')
+    IS = IS.json()
+    IS = pd.DataFrame.from_dict(IS)
+    IS = IS.T
+    print(IS.T)
+    save_to_csv = input('Save to csv? y or n ').strip()
+    if save_to_csv == 'y':
+        IS.to_csv(f'{stock} IS.csv')
+
+def dividends(stock):
+    number_of_dividends = input('Number of dividends? ').strip()
+    number_of_dividends = int(number_of_dividends)
+    dividends = requests.get(f'https://financialmodelingprep.com/api/v3/historical-price-full/stock_dividend/{stock}?apikey={api_key}').json()
+    dividends = dividends['historical'][0:number_of_dividends]
+
+    for item in dividends:
+        print(item['paymentDate'] + ' Dividend was :' + str(item['adjDividend']))
+
+def historical_prices(stock):
+    historical_prices = requests.get(f'https://financialmodelingprep.com/api/v3/historical-chart/1hour/{stock}?apikey={api_key}').json()
+    #print(historical_prices)
+    price_data = {}
+
+    for item in historical_prices:
+        price_data[item['date']] = {}
+        price_data[item['date']]['date'] = item['date']
+        price_data[item['date']]['open'] = item['open']
+        price_data[item['date']]['high'] = item['high']
+        price_data[item['date']]['low'] = item['low']
+        price_data[item['date']]['close'] = item['close']
+
+    price_DF = pd.DataFrame.from_dict(price_data)
+    price_DF = price_DF.T
+    
+    fig = go.Figure(data=[go.Candlestick(x=price_DF['date'],
+                open=price_DF['open'], 
+                high=price_DF['high'],
+                low=price_DF['low'], 
+                close=price_DF['close'])])
+    fig.show()
+    print(price_data)
+    print(price_DF)
+def profile(stock):
+    profile = requests.get(f'https://financialmodelingprep.com/api/v3/profile/{stock}?apikey={api_key}').json()
+    print(profile)
+
+while True:
+    comman = input('Stock? ')
+    #IS APPL
+    stock = comman.split(' ')[1]
+    
+    if comman == 'IS ' + stock:
+        income_statement(stock)
+
+    if comman == 'Profile ' + stock:
+        profile(stock)
+
+    if comman == 'DIV ' + stock:
+        dividends(stock)
+    
+    if comman == 'HP ' + stock:
+        historical_prices(stock)
+
+    elif comman == 'quit':
+        break
+    else:
+        print('Statement is not valid ')
